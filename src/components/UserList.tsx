@@ -9,11 +9,11 @@ export default class UserList extends Component<UserListProps, {}> {
     const { title, conditionFilter } = this.props;
     return (
       <StudentGradeContext.Consumer>
-        {(value) => (
+        {(data) => (
           <>
             <h1>{title}</h1>
             <ul>
-              {value.users.filter(conditionFilter).map((user) => (
+              {data.filter(conditionFilter).map((user) => (
                 <li key={user.name + '-' + Math.floor(Math.random() * 1000)}>
                   {user.name}
                 </li>

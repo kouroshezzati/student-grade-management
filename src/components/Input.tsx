@@ -1,31 +1,25 @@
-import React, { ChangeEventHandler, Component } from 'react';
+import React, { Component } from 'react';
 
 interface InputProps {
   label: string;
-  value: string | number | undefined;
-  onChange(value: string | number): any;
+  value: string;
+  onChange?(event: React.ChangeEvent<HTMLInputElement>): void;
   error: boolean;
-  type?: Type;
 }
 
-type Type = 'text' | 'number';
-
-export default class Input extends Component<InputProps> {
-  render() {
-    const { label, value, onChange, error, type } = this.props;
-    const id: string = 'label' + Math.floor(Math.random() * 1000);
-    return (
-      <div>
-        <label htmlFor={id}>{label}</label>
-        <input
-          type={type || 'text'}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange(e.target.value)
-          }
-          value={value}
-        />
-        {error && <div>Field is required!</div>}
-      </div>
-    );
-  }
-}
+export default React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+  const { label, value, onChange, error } = props;
+  const id: string = 'label' + Math.floor(Math.random() * 1000);
+  return (
+    <div>
+      <label htmlFor={id}>{label}</label>
+      <input
+        onChange={onChange}
+        value={value}
+        ref={ref}
+        className={error ? 'error' : ''}
+      />
+      {error && <div className="error-message">Field is required!</div>}
+    </div>
+  );
+});

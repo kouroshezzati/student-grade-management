@@ -3,29 +3,42 @@ import ButtonComponent from './Button';
 import Input from './Input';
 import UserList from './UserList';
 
-interface StudentGradeContextType {
-  users: Student[];
-  addStudent(student: undefined | Student): any;
+interface FieldConfig {
+  [field: string]: {
+    name: Fields;
+    label: string;
+  };
 }
+
+const FIELDS_CONFIG: FieldConfig = {
+  INPUT_STUDENT_NAME: {
+    name: 'inputStudentName',
+    label: 'Student Name',
+  },
+  INPUT_GRADE: {
+    name: 'inputGrade',
+    label: 'Grade',
+  },
+};
+
 export interface Student {
   name: string;
   grade: number;
 }
-export const StudentGradeContext = React.createContext<StudentGradeContextType>(
-  {
-    users: [],
-    addStudent: () => {},
-  }
-);
 
-interface StudentGradeContextProviderState {
+export const StudentGradeContext = React.createContext<Student[]>([]);
+type Fields = 'inputGrade' | 'inputStudentName';
+
+type StudentGradeState = {
+  [key in Fields]: string;
+} & {
   users: Student[];
-}
+  fieldError: Fields | '';
+};
 
-class StudentGradeContextProvider extends Component<
-  {},
-  StudentGradeContextProviderState
-> {
+class StudentGrade extends Component<{}, StudentGradeState> {
+  inputGradeRef: React.RefObject<HTMLInputElement>;
+  inputStudentNameRef: React.RefObject<HTMLInputElement>;
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -34,101 +47,87 @@ class StudentGradeContextProvider extends Component<
         { name: 'Armin', grade: 73 },
         { name: 'Rozhin', grade: 66 },
       ],
+      inputGrade: '',
+      inputStudentName: '',
+      fieldError: '',
     };
+    this.inputGradeRef = React.createRef();
+    this.inputStudentNameRef = React.createRef();
   }
-  addStudent = (student: Student) => {
-    this.setState({ users: [...this.state.users, student] });
+
+  handleInputOnChange =
+    (stateKey: Fields) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const { value } = event.currentTarget;
+      const { fieldError } = this.state;
+
+      this.setState({
+        [stateKey]: value,
+      } as Omit<StudentGradeState, 'users' | 'fieldError'>);
+
+      if (fieldError === stateKey && value.length) {
+        this.setState({ fieldError: '' });
+      }
+    };
+
+  areInputsValid = () => {
+    const { inputGrade, inputStudentName } = this.state;
+
+    if (!inputGrade) {
+      this.inputGradeRef.current?.focus();
+      this.setState({ fieldError: 'inputGrade' });
+    } else if (!inputStudentName) {
+      this.inputStudentNameRef.current?.focus();
+      this.setState({ fieldError: 'inputStudentName' });
+    }
+    return inputGrade && inputStudentName;
   };
+
+  handleButtonClick = () => {
+    const { inputGrade, inputStudentName, users } = this.state;
+    if (this.areInputsValid()) {
+      this.setState({
+        users: [
+          ...users,
+          { name: inputStudentName, grade: parseFloat(inputGrade) },
+        ],
+        inputStudentName: '',
+        inputGrade: '',
+      });
+    }
+  };
+
   render() {
+    const { users, inputStudentName, inputGrade, fieldError } = this.state;
+    const { INPUT_GRADE, INPUT_STUDENT_NAME } = FIELDS_CONFIG;
     return (
-      <StudentGradeContext.Provider
-        value={{ users: this.state.users, addStudent: this.addStudent }}
-      >
-        {this.props.children}
+      <StudentGradeContext.Provider value={users}>
+        <UserList title="Users" conditionFilter={() => true} />
+        <Input
+          label={INPUT_STUDENT_NAME.label}
+          value={inputStudentName}
+          error={fieldError === INPUT_STUDENT_NAME.name}
+          onChange={this.handleInputOnChange(INPUT_STUDENT_NAME.name)}
+        />
+        <Input
+          onChange={this.handleInputOnChange(INPUT_GRADE.name)}
+          label={INPUT_GRADE.label}
+          value={inputGrade}
+          error={fieldError === INPUT_GRADE.name}
+        />
+        <ButtonComponent onClick={this.handleButtonClick}>
+          Save user
+        </ButtonComponent>
+        <UserList
+          title="Users above 90%"
+          conditionFilter={(student: Student) => student.grade >= 90}
+        />
+        <UserList
+          title="Users below 70%"
+          conditionFilter={(student: Student) => student.grade <= 70}
+        />
       </StudentGradeContext.Provider>
     );
   }
 }
 
-interface StudentGradeState {
-  name: string;
-  grade: number;
-  nameError: boolean;
-  gradeError: boolean;
-}
-
-export default class StudentGrade extends Component<{}, StudentGradeState> {
-  constructor(props: {}) {
-    super(props);
-    this.state = {
-      name: '',
-      grade: 0,
-      nameError: false,
-      gradeError: false,
-    };
-  }
-
-  handleNameChange = (name: string) => {
-    this.setState({ name, nameError: name.length === 0 });
-  };
-
-  handleGradeChange = (grade: number) => {
-    this.setState({ grade, gradeError: !grade });
-  };
-
-  render() {
-    const { name, nameError, grade, gradeError } = this.state;
-    return (
-      <StudentGradeContextProvider>
-        <StudentGradeContext.Consumer>
-          {(value) => (
-            <>
-              <UserList title="Users" conditionFilter={() => true} />
-              <Input
-                label="Name:"
-                onChange={this.handleNameChange}
-                value={name}
-                error={nameError}
-              />
-              <Input
-                label="Grade:"
-                onChange={this.handleGradeChange}
-                value={grade}
-                error={gradeError}
-              />
-              <ButtonComponent
-                onClick={() => {
-                  if (nameError || gradeError) {
-                    return;
-                  }
-                  value.addStudent({ name, grade });
-                  this.setState(
-                    {
-                      name: '',
-                      grade: 0,
-                      nameError: false,
-                      gradeError: false,
-                    },
-                    () => {
-                      console.log('the state is', this.state);
-                    }
-                  );
-                }}
-              >
-                Save user
-              </ButtonComponent>
-              <UserList
-                title="Users above 90%"
-                conditionFilter={(student: Student) => student.grade >= 90}
-              />
-              <UserList
-                title="Users below 70%"
-                conditionFilter={(student: Student) => student.grade <= 70}
-              />
-            </>
-          )}
-        </StudentGradeContext.Consumer>
-      </StudentGradeContextProvider>
-    );
-  }
-}
+export default StudentGrade;
