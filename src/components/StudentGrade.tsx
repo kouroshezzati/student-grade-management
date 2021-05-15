@@ -104,6 +104,7 @@ class StudentGrade extends Component<{}, StudentGradeState> {
         <UserList title="Users" conditionFilter={() => true} />
         <Input
           label={INPUT_STUDENT_NAME.label}
+          ref={this.inputStudentNameRef}
           value={inputStudentName}
           error={fieldError === INPUT_STUDENT_NAME.name}
           onChange={this.handleInputOnChange(INPUT_STUDENT_NAME.name)}
@@ -111,6 +112,7 @@ class StudentGrade extends Component<{}, StudentGradeState> {
         <Input
           onChange={this.handleInputOnChange(INPUT_GRADE.name)}
           label={INPUT_GRADE.label}
+          ref={this.inputGradeRef}
           value={inputGrade}
           error={fieldError === INPUT_GRADE.name}
         />
